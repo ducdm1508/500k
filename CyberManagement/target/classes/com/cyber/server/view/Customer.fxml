@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox spacing="10" alignment="TOP_LEFT" xmlns:fx="http://javafx.com/fxml" fx:controller="com.cyber.server.controller.CustomerController" styleClass="main-container">
+    <!-- Bảng TableView -->
+    <TableView fx:id="userTable" VBox.vgrow="ALWAYS" styleClass="table-view">
+        <columns>
+            <TableColumn text="Tên đăng nhập" fx:id="usernameColumn" styleClass="table-column"/>
+            <TableColumn text="Mật khẩu" fx:id="passwordColumn" styleClass="table-column"/>
+            <TableColumn text="Số điện thoại" fx:id="phoneColumn" styleClass="table-column"/>
+            <TableColumn text="Số tiền còn lại" fx:id="balanceColumn" styleClass="table-column"/>
+        </columns>
+    </TableView>
+
+    <!-- Nút tìm kiếm -->
+    <HBox spacing="10" alignment="CENTER" styleClass="button-container">
+        <Button text="Tìm kiếm" onAction="#timKiemTaiKhoan"/>
+        <Button text="Nạp tiền" onAction="#napTienAction"/>
+        <Button text="Xóa tài khoản" onAction="#xoaTaiKhoan"/>
+        <Button text="Sửa thông tin tài khoản" onAction="#suaTaiKhoan"/>
+        <Button text="Thêm tài khoản" onAction="#themTaiKhoan"/>
+    </HBox>
+</VBox>

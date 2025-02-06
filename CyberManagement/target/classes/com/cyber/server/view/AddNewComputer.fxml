@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.cyber.server.controller.AddComputerController">
+    <Label text="Name:" layoutX="20.0" layoutY="20.0"/>
+    <TextField fx:id="nameInput" layoutX="100.0" layoutY="20.0"/>
+
+    <Label text="Specifications:" layoutX="20.0" layoutY="60.0"/>
+    <TextField fx:id="specificationsInput" layoutX="100.0" layoutY="60.0"/>
+
+    <Label text="IP Address:" layoutX="20.0" layoutY="100.0"/>
+    <TextField fx:id="ipAddressInput" layoutX="100.0" layoutY="100.0"/>
+
+    <Label text="Room:" layoutX="20.0" layoutY="140.0"/>
+    <ComboBox fx:id="roomComboBox" layoutX="100.0" layoutY="140.0"/>
+
+    <Button text="Save" layoutX="100.0" layoutY="200.0" onAction="#handleSaveButton"/>
+    <Button text="Cancel" layoutX="200.0" layoutY="200.0" onAction="#handleCancelButton"/>
+</AnchorPane>

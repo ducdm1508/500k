@@ -2,12 +2,15 @@ package com.cyber.server.model;
 
 public class RoomType {
     private int id;
-    private String name;
+    private RoomTypeName roomTypeName;
     private String description;
 
-    public RoomType(){;}
-    public RoomType(String name, String description) {
-        this.name = name;
+    public RoomType() {
+    }
+
+    public RoomType(int id, RoomTypeName roomTypeName, String description) {
+        this.id = id;
+        this.roomTypeName = roomTypeName;
         this.description = description;
     }
 
@@ -19,12 +22,12 @@ public class RoomType {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public RoomTypeName getRoomTypeName() {
+        return roomTypeName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setRoomTypeName(RoomTypeName roomTypeName) {
+        this.roomTypeName = roomTypeName;
     }
 
     public String getDescription() {
@@ -34,5 +37,4 @@ public class RoomType {
     public void setDescription(String description) {
         this.description = description;
     }
-
 }

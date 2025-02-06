@@ -6,7 +6,7 @@ import java.sql.Statement;
 
 public class DatabaseInitializer {
     public static void main(String[] args) {
-        String createDatabaseSQL = "CREATE DATABASE IF NOT EXISTS NetCafeDB";
+        String createDatabaseSQL = "CREATE DATABASE IF NOT EXISTS netcafedb";
 
         String createUsersTableSQL = """
             CREATE TABLE IF NOT EXISTS USERS (

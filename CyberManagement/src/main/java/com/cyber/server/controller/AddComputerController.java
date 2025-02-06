@@ -84,6 +84,7 @@ public class AddComputerController {
 
     private void addComputer() throws SQLException {
         String sql = "INSERT INTO computers (computer_name, specifications, ip_address, room_id) VALUES (?, ?, ?, ?)";
+
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
             pstmt.setString(1, nameInput.getText());
@@ -102,24 +103,53 @@ public class AddComputerController {
     }
 
     private void updateComputer(Computer computer) throws SQLException {
+        System.out.println("🔹 updateComputer() method called!");
+
         String sql = "UPDATE computers SET computer_name = ?, specifications = ?, ip_address = ?, room_id = ? WHERE computer_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
             pstmt.setString(1, nameInput.getText());
             pstmt.setString(2, specificationsInput.getText());
             pstmt.setString(3, ipAddressInput.getText());
 
             Room selectedRoom = roomComboBox.getValue();
+            int roomId;
+
+            // Kiểm tra xem room_id có bị null không
             if (selectedRoom != null) {
-                pstmt.setInt(4, selectedRoom.getId());
+                roomId = selectedRoom.getId();
+            } else if (computer.getRoom() != null) {
+                roomId = computer.getRoom().getId();
             } else {
-                pstmt.setNull(4, java.sql.Types.INTEGER);
+                System.out.println("❌ ERROR: Room ID is NULL! Update cannot proceed.");
+                throw new SQLException("❗ ERROR: Room ID is null, which violates foreign key constraint.");
             }
 
+            System.out.println("✅ Room ID to be updated: " + roomId);
+
+            pstmt.setInt(4, roomId);
             pstmt.setInt(5, computer.getId());
-            pstmt.executeUpdate();
+
+            System.out.println("🔹 Preparing to execute update...");
+            System.out.println("Computer ID: " + computer.getId());
+            System.out.println("Room ID before update: " + (computer.getRoom() != null ? computer.getRoom().getId() : "NULL"));
+            System.out.println("New Room ID: " + roomId);
+
+            int rowsAffected = pstmt.executeUpdate();
+            System.out.println("🔹 Rows affected: " + rowsAffected);
+
+            if (rowsAffected > 0) {
+                System.out.println("✅ Update successful!");
+            } else {
+                System.out.println("❌ Update failed. No rows affected.");
+            }
+        } catch (SQLException e) {
+            System.out.println("❗ SQL Error: " + e.getMessage());
+            e.printStackTrace();
         }
     }
+
 
     @FXML
     private void handleCancelButton() {

@@ -50,4 +50,3 @@ public class Room {
         return name;
     }
 }
-
