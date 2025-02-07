@@ -23,6 +23,9 @@ public class MainApplication extends Application {
         stage.setHeight(primaryScreenBounds.getHeight());
         stage.setTitle("Cyber Management");
         stage.setScene(scene);
+
+        stage.setMaximized(true);
+
         stage.show();
     }
 

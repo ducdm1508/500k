@@ -2,20 +2,32 @@
 
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.cyber.server.controller.AddComputerController">
-    <Label text="Name:" layoutX="20.0" layoutY="20.0"/>
-    <TextField fx:id="nameInput" layoutX="100.0" layoutY="20.0"/>
+<VBox alignment="CENTER" xmlns:fx="http://javafx.com/fxml/1" fx:controller="com.cyber.server.controller.AddComputerController" spacing="20" stylesheets="@../style/AddComputer.css">
+    <HBox spacing="67" alignment="CENTER">
+        <Label text="Name:"/>
+        <TextField fx:id="nameInput"/>
+    </HBox>
 
-    <Label text="Specifications:" layoutX="20.0" layoutY="60.0"/>
-    <TextField fx:id="specificationsInput" layoutX="100.0" layoutY="60.0"/>
+    <HBox spacing="15" alignment="CENTER">
+        <Label text="Specifications:"/>
+        <TextField fx:id="specificationsInput"/>
+    </HBox>
 
-    <Label text="IP Address:" layoutX="20.0" layoutY="100.0"/>
-    <TextField fx:id="ipAddressInput" layoutX="100.0" layoutY="100.0"/>
+    <HBox spacing="37" alignment="CENTER">
+        <Label text="IP Address:"/>
+        <TextField fx:id="ipAddressInput"/>
+    </HBox>
 
-    <Label text="Room:" layoutX="20.0" layoutY="140.0"/>
-    <ComboBox fx:id="roomComboBox" layoutX="100.0" layoutY="140.0"/>
+    <HBox spacing="69" alignment="CENTER">
+        <Label text="Room:"/>
+        <ComboBox fx:id="roomComboBox"/>
+    </HBox>
 
-    <Button text="Save" layoutX="100.0" layoutY="200.0" onAction="#handleSaveButton"/>
-    <Button text="Cancel" layoutX="200.0" layoutY="200.0" onAction="#handleCancelButton"/>
-</AnchorPane>
+    <!-- HBox cho các nút -->
+    <HBox spacing="20" alignment="CENTER">
+        <Button text="Save" onAction="#handleSaveButton"/>
+        <Button text="Cancel" onAction="#handleCancelButton"/>
+    </HBox>
+</VBox>

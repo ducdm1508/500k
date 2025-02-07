@@ -13,7 +13,9 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.image.Image;
 import javafx.scene.layout.HBox;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
@@ -21,10 +23,10 @@ import javafx.stage.Stage;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.Statement;
+import java.sql.*;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -50,13 +52,13 @@ public class ComputerController {
     private TableColumn<Computer, String> roomColumn;
 
     @FXML
-    private TableColumn<Computer, LocalDateTime> lastMaintenanceDateColumn;
+    private TableColumn<Computer, String> lastMaintenanceDateColumn;
 
     @FXML
     private TableColumn<Computer, Void> actionColumn;
 
     @FXML
-    private Button addButton;
+    private TextField searchField;
 
     private final ObservableList<Computer> computerList = FXCollections.observableArrayList();
     private ScheduledExecutorService scheduler;
@@ -66,6 +68,7 @@ public class ComputerController {
         configureTable();
         loadComputersFromDatabase();
         startDatabasePolling();
+        searchField.textProperty().addListener((observable, oldValue, newValue) -> handleSearch());
     }
 
     private void configureTable() {
@@ -88,7 +91,10 @@ public class ComputerController {
                         statusCircle.setFill(javafx.scene.paint.Color.GREEN);
                     } else if (status.equals("OFFLINE")) {
                         statusCircle.setFill(javafx.scene.paint.Color.RED);
-                    } else {
+                    }else if (status.equals("MAINTENANCE")) {
+                        statusCircle.setFill(Color.YELLOW);
+                    }
+                    else{
                         statusCircle.setFill(javafx.scene.paint.Color.GRAY);
                     }
                     setGraphic(statusCircle);
@@ -100,17 +106,25 @@ public class ComputerController {
         specificationsColumn.setCellValueFactory(new PropertyValueFactory<>("specifications"));
         ipAddressColumn.setCellValueFactory(new PropertyValueFactory<>("ipAddress"));
         roomColumn.setCellValueFactory(cellData -> new SimpleStringProperty(cellData.getValue().getRoom().getName()));
-        lastMaintenanceDateColumn.setCellValueFactory(new PropertyValueFactory<>("lastMaintenanceDate"));
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        lastMaintenanceDateColumn.setCellValueFactory(cellData -> {
+            LocalDateTime dateTime = cellData.getValue().getLastMaintenanceDate();
+            return new SimpleStringProperty(dateTime != null ? dateTime.format(formatter) : "");
+        });
 
         actionColumn.setCellFactory(column -> new TableCell<>() {
             private final Button editButton = new Button();
             private final Button deleteButton = new Button();
             private final Button lockButton = new Button();
+            private final Button maintenanceButton = new Button();
 
             {
                 editButton.setGraphic(new FontAwesomeIconView(FontAwesomeIcon.PENCIL));
                 deleteButton.setGraphic(new FontAwesomeIconView(FontAwesomeIcon.TRASH));
                 lockButton.setGraphic(new FontAwesomeIconView(FontAwesomeIcon.LOCK));
+                maintenanceButton.setGraphic(new FontAwesomeIconView(FontAwesomeIcon.WRENCH));
 
                 editButton.setOnAction(event -> {
                     Computer computer = getTableView().getItems().get(getIndex());
@@ -127,9 +141,15 @@ public class ComputerController {
                     handleLockAction();
                 });
 
+                maintenanceButton.setOnAction(event -> {
+                    Computer computer = getTableView().getItems().get(getIndex());
+                    handleMaintenace(computer);
+                });
+
                 editButton.setStyle("-fx-background-color: green;");
                 deleteButton.setStyle("-fx-background-color: red;");
                 lockButton.setStyle("-fx-background-color: white;");
+                maintenanceButton.setStyle("-fx-background-color: yellow;");
             }
 
             @Override
@@ -138,8 +158,10 @@ public class ComputerController {
                 if (empty) {
                     setGraphic(null);
                 } else {
-                    HBox buttons = new HBox(10, editButton, deleteButton, lockButton);
+                    HBox buttons = new HBox(10, editButton, deleteButton, lockButton, maintenanceButton);
+                    buttons.setStyle("-fx-alignment: center;");
                     setGraphic(buttons);
+                    setStyle("-fx-alignment: center;");
                 }
             }
         });
@@ -210,7 +232,13 @@ public class ComputerController {
             Stage stage = new Stage();
             stage.setTitle(computer == null ? "Add New Computer" : "Edit Computer");
             stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setScene(new Scene(root));
+            Scene scene = new Scene(root);
+            Image logo = new Image(Objects.requireNonNull(getClass().getResource("/com/cyber/server/assets/logo.jpg")).toExternalForm());
+            stage.getIcons().add(logo);
+            stage.setWidth(720);
+            stage.setHeight(400);
+            stage.setResizable(false);
+            stage.setScene(scene);
             stage.showAndWait();
         } catch (Exception e) {
             e.printStackTrace();
@@ -237,14 +265,12 @@ public class ComputerController {
                 if (rowsAffected > 0) {
                     computerList.remove(computer);
 
-                    // Show success message
                     Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
                     successAlert.setTitle("Success");
                     successAlert.setHeaderText(null);
                     successAlert.setContentText("The computer has been successfully deleted.");
                     successAlert.showAndWait();
                 } else {
-                    // If no rows were affected
                     Alert errorAlert = new Alert(Alert.AlertType.ERROR);
                     errorAlert.setTitle("Error");
                     errorAlert.setHeaderText(null);
@@ -264,5 +290,45 @@ public class ComputerController {
     private void handleLockAction(){
         System.out.println("hihi");
     }
+    public void handleSearch() {
+        String searchTerm = searchField.getText().toLowerCase().trim();
+
+        if (searchTerm.isEmpty()) {
+            tableView.setItems(computerList);
+            return;
+        }
+
+        ObservableList<Computer> filteredList = computerList.filtered(computer ->
+                computer.getName().toLowerCase().contains(searchTerm) ||
+                        computer.getStatus().toString().toLowerCase().contains(searchTerm) ||
+                        computer.getSpecifications().toLowerCase().contains(searchTerm) ||
+                        computer.getIpAddress().toLowerCase().contains(searchTerm) ||
+                        computer.getRoom().getName().toLowerCase().contains(searchTerm)
+        );
+
+        tableView.setItems(filteredList);
+    }
+
+    private void handleMaintenace(Computer computer) {
+        String sql = "UPDATE computers SET last_maintenance_date = ?, status = ? WHERE computer_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            Status newStatus = (computer.getStatus() == Status.MAINTENANCE) ? Status.OFFLINE : Status.MAINTENANCE;
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            String formattedDateTime = now.format(formatter);
+            pstmt.setString(2, newStatus.name());
+            pstmt.setString(1, formattedDateTime);
+            pstmt.setInt(3, computer.getId());
+            pstmt.executeUpdate();
+
+            computer.setStatus(newStatus);
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }

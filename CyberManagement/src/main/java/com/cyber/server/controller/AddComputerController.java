@@ -4,8 +4,12 @@ import com.cyber.server.database.DatabaseConnection;
 import com.cyber.server.model.Computer;
 import com.cyber.server.model.Room;
 import javafx.fxml.FXML;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextField;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.stage.Stage;
 
 import java.sql.Connection;
@@ -14,6 +18,8 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 public class AddComputerController {
 
@@ -70,15 +76,30 @@ public class AddComputerController {
 
     @FXML
     private void handleSaveButton() {
-        try {
-            if (computer != null) {
-                updateComputer(computer);
-            } else {
-                addComputer();
+        // Kiểm tra các trường không được để trống
+        if (nameInput.getText().isEmpty() || specificationsInput.getText().isEmpty() || ipAddressInput.getText().isEmpty() || roomComboBox.getValue() == null) {
+            showAlert("Error", "All fields are required!", Alert.AlertType.ERROR);
+            return;
+        }
+
+        // Hiển thị hộp thoại xác nhận
+        Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
+        confirmationAlert.setTitle("Confirmation");
+        confirmationAlert.setHeaderText("Are you sure you want to save?");
+        confirmationAlert.setContentText("Click OK to save the data, or Cancel to go back.");
+
+        Optional<ButtonType> result = confirmationAlert.showAndWait();
+        if (result.isPresent() && result.get() == ButtonType.OK) {
+            try {
+                if (computer != null) {
+                    updateComputer(computer);
+                } else {
+                    addComputer();
+                }
+                closeWindow();
+            } catch (SQLException e) {
+                e.printStackTrace();
             }
-            closeWindow();
-        } catch (SQLException e) {
-            e.printStackTrace();
         }
     }
 
@@ -103,8 +124,6 @@ public class AddComputerController {
     }
 
     private void updateComputer(Computer computer) throws SQLException {
-        System.out.println("🔹 updateComputer() method called!");
-
         String sql = "UPDATE computers SET computer_name = ?, specifications = ?, ip_address = ?, room_id = ? WHERE computer_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
@@ -116,40 +135,20 @@ public class AddComputerController {
             Room selectedRoom = roomComboBox.getValue();
             int roomId;
 
-            // Kiểm tra xem room_id có bị null không
             if (selectedRoom != null) {
                 roomId = selectedRoom.getId();
             } else if (computer.getRoom() != null) {
                 roomId = computer.getRoom().getId();
             } else {
-                System.out.println("❌ ERROR: Room ID is NULL! Update cannot proceed.");
-                throw new SQLException("❗ ERROR: Room ID is null, which violates foreign key constraint.");
+                throw new SQLException("Room ID is null, which violates foreign key constraint.");
             }
-
-            System.out.println("✅ Room ID to be updated: " + roomId);
 
             pstmt.setInt(4, roomId);
             pstmt.setInt(5, computer.getId());
 
-            System.out.println("🔹 Preparing to execute update...");
-            System.out.println("Computer ID: " + computer.getId());
-            System.out.println("Room ID before update: " + (computer.getRoom() != null ? computer.getRoom().getId() : "NULL"));
-            System.out.println("New Room ID: " + roomId);
-
-            int rowsAffected = pstmt.executeUpdate();
-            System.out.println("🔹 Rows affected: " + rowsAffected);
-
-            if (rowsAffected > 0) {
-                System.out.println("✅ Update successful!");
-            } else {
-                System.out.println("❌ Update failed. No rows affected.");
-            }
-        } catch (SQLException e) {
-            System.out.println("❗ SQL Error: " + e.getMessage());
-            e.printStackTrace();
+            pstmt.executeUpdate();
         }
     }
-
 
     @FXML
     private void handleCancelButton() {
@@ -161,4 +160,11 @@ public class AddComputerController {
         stage.close();
     }
 
+    private void showAlert(String title, String message, Alert.AlertType alertType) {
+        Alert alert = new Alert(alertType);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
 }
