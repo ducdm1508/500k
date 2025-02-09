@@ -73,7 +73,18 @@ public class AddComputerController {
             e.printStackTrace();
         }
     }
-
+    private boolean isComputerNameExists(String computerName) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM computers WHERE computer_name = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, computerName);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return rs.getInt(1) > 0; // Return true if count is greater than 0
+            }
+        }
+        return false; // Return false if no duplicates found
+    }
     @FXML
     private void handleSaveButton() {
         // Kiểm tra các trường không được để trống
@@ -82,7 +93,20 @@ public class AddComputerController {
             return;
         }
 
-        // Hiển thị hộp thoại xác nhận
+        // Check for duplicate computer name only if the name has changed
+        try {
+            if (computer == null || !nameInput.getText().equals(computer.getName())) {
+                if (isComputerNameExists(nameInput.getText())) {
+                    showAlert("Error", "A computer with this name already exists!", Alert.AlertType.ERROR);
+                    return;
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+            showAlert("Error", "An error occurred while checking for duplicates.", Alert.AlertType.ERROR);
+            return;
+        }
+
         Alert confirmationAlert = new Alert(Alert.AlertType.CONFIRMATION);
         confirmationAlert.setTitle("Confirmation");
         confirmationAlert.setHeaderText("Are you sure you want to save?");
@@ -102,6 +126,7 @@ public class AddComputerController {
             }
         }
     }
+
 
     private void addComputer() throws SQLException {
         String sql = "INSERT INTO computers (computer_name, specifications, ip_address, room_id) VALUES (?, ?, ?, ?)";

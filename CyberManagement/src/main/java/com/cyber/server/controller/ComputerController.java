@@ -4,6 +4,7 @@ import com.cyber.server.model.Computer;
 import com.cyber.server.model.Room;
 import com.cyber.server.model.Status;
 import com.cyber.server.database.DatabaseConnection;
+import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -15,17 +16,19 @@ import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 
-import de.jensd.fx.glyphs.fontawesome.FontAwesomeIcon;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -58,17 +61,29 @@ public class ComputerController {
     private TableColumn<Computer, Void> actionColumn;
 
     @FXML
+    private VBox filterPanel;
+
+    @FXML
+    private ComboBox<Room> roomFilter;
+
+    @FXML
+    private ComboBox<String> specFilter;
+
+    @FXML
+    private ComboBox<Status> statusFilter;
+
+    @FXML
     private TextField searchField;
 
     private final ObservableList<Computer> computerList = FXCollections.observableArrayList();
-    private ScheduledExecutorService scheduler;
 
     @FXML
     public void initialize() {
         configureTable();
         loadComputersFromDatabase();
-        startDatabasePolling();
+        loadRoomsAndStatuses();
         searchField.textProperty().addListener((observable, oldValue, newValue) -> handleSearch());
+
     }
 
     private void configureTable() {
@@ -88,14 +103,13 @@ public class ComputerController {
                     Circle statusCircle = new Circle(10);
                     setText(status);
                     if (status.equals("ONLINE")) {
-                        statusCircle.setFill(javafx.scene.paint.Color.GREEN);
+                        statusCircle.setFill(Color.GREEN);
                     } else if (status.equals("OFFLINE")) {
-                        statusCircle.setFill(javafx.scene.paint.Color.RED);
-                    }else if (status.equals("MAINTENANCE")) {
+                        statusCircle.setFill(Color.RED);
+                    } else if (status.equals("MAINTENANCE")) {
                         statusCircle.setFill(Color.YELLOW);
-                    }
-                    else{
-                        statusCircle.setFill(javafx.scene.paint.Color.GRAY);
+                    } else {
+                        statusCircle.setFill(Color.GRAY);
                     }
                     setGraphic(statusCircle);
                     setStyle("-fx-alignment: center;");
@@ -114,7 +128,7 @@ public class ComputerController {
             return new SimpleStringProperty(dateTime != null ? dateTime.format(formatter) : "");
         });
 
-        actionColumn.setCellFactory(column -> new TableCell<>() {
+        actionColumn.setCellFactory(column -> new TableCell<Computer, Void>() {
             private final Button editButton = new Button();
             private final Button deleteButton = new Button();
             private final Button lockButton = new Button();
@@ -143,7 +157,7 @@ public class ComputerController {
 
                 maintenanceButton.setOnAction(event -> {
                     Computer computer = getTableView().getItems().get(getIndex());
-                    handleMaintenace(computer);
+                    handleMaintenance(computer);
                 });
 
                 editButton.setStyle("-fx-background-color: green;");
@@ -201,12 +215,52 @@ public class ComputerController {
         }
     }
 
+    private void loadRoomsAndStatuses() {
+        List<Room> rooms = loadRoomsFromDB();
+        roomFilter.getItems().add(null);
+        roomFilter.getItems().addAll(rooms);
+        specFilter.getItems().add(null);
+        specFilter.getItems().addAll(getUniqueSpecifications());
+        statusFilter.getItems().add(null);
+        statusFilter.getItems().addAll(Status.values());
+    }
 
-    private void startDatabasePolling() {
-        scheduler = Executors.newScheduledThreadPool(1);
-        scheduler.scheduleAtFixedRate(() -> {
-            loadComputersFromDatabase();
-        }, 0, 5, TimeUnit.SECONDS);
+    private List<Room> loadRoomsFromDB() {
+        List<Room> rooms = new ArrayList<>();
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement()) {
+
+            ResultSet rs = stmt.executeQuery("SELECT * FROM rooms");
+            while (rs.next()) {
+                Room room = new Room();
+                room.setId(rs.getInt("room_id"));
+                room.setName(rs.getString("room_name"));
+                rooms.add(room);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return rooms;
+    }
+
+    private List<String> getUniqueSpecifications() {
+        List<String> specifications = new ArrayList<>();
+        String sql = "SELECT DISTINCT specifications FROM computers";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+
+            while (rs.next()) {
+                String spec = rs.getString("specifications");
+                if (spec != null && !spec.isEmpty()) {
+                    specifications.add(spec);
+                }
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return specifications;
     }
 
     @FXML
@@ -240,6 +294,7 @@ public class ComputerController {
             stage.setResizable(false);
             stage.setScene(scene);
             stage.showAndWait();
+            loadComputersFromDatabase();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -264,6 +319,7 @@ public class ComputerController {
 
                 if (rowsAffected > 0) {
                     computerList.remove(computer);
+                    loadComputersFromDatabase();
 
                     Alert successAlert = new Alert(Alert.AlertType.INFORMATION);
                     successAlert.setTitle("Success");
@@ -287,48 +343,76 @@ public class ComputerController {
             }
         }
     }
-    private void handleLockAction(){
-        System.out.println("hihi");
+
+    private void handleLockAction() {
+        System.out.println("Lock action triggered");
     }
+
     public void handleSearch() {
-        String searchTerm = searchField.getText().toLowerCase().trim();
-
-        if (searchTerm.isEmpty()) {
-            tableView.setItems(computerList);
-            return;
-        }
-
-        ObservableList<Computer> filteredList = computerList.filtered(computer ->
-                computer.getName().toLowerCase().contains(searchTerm) ||
-                        computer.getStatus().toString().toLowerCase().contains(searchTerm) ||
-                        computer.getSpecifications().toLowerCase().contains(searchTerm) ||
-                        computer.getIpAddress().toLowerCase().contains(searchTerm) ||
-                        computer.getRoom().getName().toLowerCase().contains(searchTerm)
-        );
-
-        tableView.setItems(filteredList);
+        handleFilter();
     }
 
-    private void handleMaintenace(Computer computer) {
+    private void handleMaintenance(Computer computer) {
         String sql = "UPDATE computers SET last_maintenance_date = ?, status = ? WHERE computer_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
              PreparedStatement pstmt = conn.prepareStatement(sql)) {
 
             Status newStatus = (computer.getStatus() == Status.MAINTENANCE) ? Status.OFFLINE : Status.MAINTENANCE;
             LocalDateTime now = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-            String formattedDateTime = now.format(formatter);
+            pstmt.setTimestamp(1, Timestamp.valueOf(now));
             pstmt.setString(2, newStatus.name());
-            pstmt.setString(1, formattedDateTime);
             pstmt.setInt(3, computer.getId());
             pstmt.executeUpdate();
 
             computer.setStatus(newStatus);
+            loadComputersFromDatabase();
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
+    public void handleFilter() {
+        String selectedRoom = roomFilter.getValue() != null ? roomFilter.getValue().getName() : "";
+        String selectedSpec = specFilter.getValue() != null ? specFilter.getValue() : "";
+        String selectedStatus = statusFilter.getValue() != null ? statusFilter.getValue().name() : "";
 
+        ObservableList<Computer> filteredList = computerList.filtered(computer -> {
+            boolean matchesRoom = selectedRoom.isEmpty() || computer.getRoom().getName().equals(selectedRoom);
+            boolean matchesSpec = selectedSpec.isEmpty() || computer.getSpecifications().contains(selectedSpec);
+            boolean matchesStatus = selectedStatus.isEmpty() || computer.getStatus().name().equals(selectedStatus);
+
+            return matchesRoom && matchesSpec && matchesStatus;
+        });
+
+        // Now apply the search filter on the filtered list
+        String searchTerm = searchField.getText().toLowerCase().trim();
+        if (!searchTerm.isEmpty()) {
+            filteredList = filteredList.filtered(computer ->
+                    computer.getName().toLowerCase().contains(searchTerm) ||
+                            computer.getStatus().toString().toLowerCase().contains(searchTerm) ||
+                            computer.getSpecifications().toLowerCase().contains(searchTerm) ||
+                            computer.getIpAddress().toLowerCase().contains(searchTerm) ||
+                            computer.getRoom().getName().toLowerCase().contains(searchTerm)
+            );
+        }
+
+        tableView.setItems(filteredList);
+    }
+
+
+    @FXML
+    public void toggleFilterPanel() {
+        boolean isVisible = filterPanel.isVisible();
+        filterPanel.setVisible(!isVisible);
+        filterPanel.setManaged(!isVisible);
+        clearFilters();
+        loadComputersFromDatabase();
+    }
+
+    private void clearFilters() {
+        roomFilter.setValue(null); // Clear the room filter
+        specFilter.setValue(null); // Clear the specifications filter
+        statusFilter.setValue(null); // Clear the status filter
+    }
 }

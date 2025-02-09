@@ -18,7 +18,7 @@
 
                 <TextField fx:id="searchField" onAction="#handleSearch" prefHeight="40.0" prefWidth="406.0" promptText="Search ..." />
 
-                <Button fx:id="fillterButton" prefHeight="40.0" prefWidth="54.0">
+                <Button fx:id="fillterButton" prefHeight="40.0" prefWidth="54.0" onAction="#toggleFilterPanel">
                     <graphic>
                         <FontAwesomeIconView glyphName="FILTER" size="20px" />
                     </graphic>
@@ -40,4 +40,29 @@
             </TableView>
         </VBox>
     </center>
+    <right>
+        <VBox fx:id="filterPanel" style="-fx-padding: 10px; -fx-background-color: #f4f4f4; -fx-border-color: #ccc;" visible="false" managed="false">
+            <HBox>
+                <Label text="Filter" style="-fx-font-size: 16px; -fx-font-weight: bold;" >
+                    <graphic>
+                        <FontAwesomeIconView glyphName="FILTER" size="20px" />
+                    </graphic>
+                </Label>
+            </HBox>
+
+            <Label text="Select Room:" />
+            <ComboBox fx:id="roomFilter" promptText="Select Room" />
+
+            <Label text="Select Specification:" />
+            <ComboBox fx:id="specFilter" promptText="Select Specification" />
+
+            <Label text="Select Status:" />
+            <ComboBox fx:id="statusFilter" promptText="Select Status" />
+
+            <HBox style="-fx-padding: 10px 0px; -fx-spacing: 10px;">
+                <Button text="Apply" onAction="#handleFilter" />
+                <Button text="Close" onAction="#toggleFilterPanel" />
+            </HBox>
+        </VBox>
+    </right>
 </BorderPane>
