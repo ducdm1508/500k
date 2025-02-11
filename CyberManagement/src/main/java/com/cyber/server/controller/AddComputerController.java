@@ -66,6 +66,7 @@ public class AddComputerController {
                 Room room = new Room();
                 room.setId(rs.getInt("room_id"));
                 room.setName(rs.getString("room_name"));
+                room.setCapacity(rs.getInt("capacity"));
                 rooms.add(room);
             }
             roomComboBox.getItems().addAll(rooms);
@@ -85,15 +86,27 @@ public class AddComputerController {
         }
         return false; // Return false if no duplicates found
     }
+    private boolean isRoomFull(int roomId, int capacity) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM computers WHERE room_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+
+            pstmt.setInt(1, roomId);
+            ResultSet rs = pstmt.executeQuery();
+            int computerCount = rs.next() ? rs.getInt(1) : 0;
+
+            return computerCount >= capacity; // So sánh với capacity đã có
+        }
+    }
+
     @FXML
     private void handleSaveButton() {
-        // Kiểm tra các trường không được để trống
         if (nameInput.getText().isEmpty() || specificationsInput.getText().isEmpty() || ipAddressInput.getText().isEmpty() || roomComboBox.getValue() == null) {
             showAlert("Error", "All fields are required!", Alert.AlertType.ERROR);
             return;
         }
 
-        // Check for duplicate computer name only if the name has changed
         try {
             if (computer == null || !nameInput.getText().equals(computer.getName())) {
                 if (isComputerNameExists(nameInput.getText())) {
@@ -101,9 +114,15 @@ public class AddComputerController {
                     return;
                 }
             }
+
+            Room selectedRoom = roomComboBox.getValue();
+            if (selectedRoom != null && isRoomFull(selectedRoom.getId(), selectedRoom.getCapacity())) {
+                showAlert("Error", "This room has reached its maximum capacity!", Alert.AlertType.ERROR);
+                return;
+            }
         } catch (SQLException e) {
             e.printStackTrace();
-            showAlert("Error", "An error occurred while checking for duplicates.", Alert.AlertType.ERROR);
+            showAlert("Error", "An error occurred while checking room capacity.", Alert.AlertType.ERROR);
             return;
         }
 
@@ -126,6 +145,7 @@ public class AddComputerController {
             }
         }
     }
+
 
 
     private void addComputer() throws SQLException {
