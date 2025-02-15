@@ -85,6 +85,21 @@ public class RoomController {
         }
     }
 
+    private int countMachinesInRoom(int roomId) {
+        String query = "SELECT COUNT(*) AS machine_count FROM COMPUTERS WHERE room_id = ?";
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setInt(1, roomId);
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                return resultSet.getInt("machine_count");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return 0; // Trả về 0 nếu có lỗi hoặc không có máy
+    }
+
     private RoomType getRoomTypeById(int roomTypeId) {
         try (Connection connection = DatabaseConnection.getConnection();
              PreparedStatement statement = connection.prepareStatement(SELECT_ROOM_TYPE_QUERY)) {
@@ -128,18 +143,46 @@ public class RoomController {
 
         Label nameLabel = new Label(room.getName());
         nameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
-
         Label capacityLabel = new Label("Capacity: " + room.getCapacity());
         capacityLabel.setStyle("-fx-font-size: 14px;");
 
         Label typeLabel = new Label("Type: " + room.getType().getRoomTypeName());
         typeLabel.setStyle("-fx-font-size: 14px;");
 
-        vbox.getChildren().addAll(nameLabel, capacityLabel, typeLabel);
+        int machineCount = countMachinesInRoom(room.getId());
+        Label machineLabel = new Label("Machines: " + machineCount);
+        machineLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: gray;");
+
+        Color defaultColor = Color.LIGHTBLUE;
+        Color fullRoomColor = Color.DARKSLATEBLUE; // Màu đậm hơn khi phòng đầy
+
+// Màu sắc khi hover
+        Color hoverColor = Color.CORNFLOWERBLUE;
+
+// Nếu số lượng máy >= capacity thì thay đổi màu nền của ô và tên phòng
+        if (machineCount >= room.getCapacity()) {
+            rect.setFill(fullRoomColor);  // Màu nền đậm hơn
+            nameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
+        } else {
+            rect.setFill(defaultColor);  // Màu nền bình thường
+            nameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
+        }
+
+// Hover effect
+        box.setOnMouseEntered(e -> {
+            rect.setFill(hoverColor);  // Màu khi hover
+        });
+        box.setOnMouseExited(e -> {
+            // Quay lại màu gốc khi không hover nữa, và vẫn giữ màu nếu phòng đầy
+            if (machineCount >= room.getCapacity()) {
+                rect.setFill(fullRoomColor);  // Quay lại màu đậm khi đầy máy
+            } else {
+                rect.setFill(defaultColor);  // Quay lại màu bình thường
+            }
+        });
+        vbox.getChildren().addAll(nameLabel, capacityLabel, typeLabel, machineLabel);
 
         // Hover effect
-        box.setOnMouseEntered(e -> rect.setFill(Color.CORNFLOWERBLUE));
-        box.setOnMouseExited(e -> rect.setFill(Color.LIGHTBLUE));
 
         // Click event to select room
         box.setOnMouseClicked(event -> {
@@ -180,8 +223,15 @@ public class RoomController {
     }
 
     private void updateRoom(Room room) {
+        int machineCount = countMachinesInRoom(room.getId());
+        int capacity = Integer.parseInt(capacityField.getText());
+
+        if (machineCount > capacity) {
+            showError("Cannot update the room because the number of machines has reached the maximum capacity.");
+            return;
+        }
         try (Connection connection = DatabaseConnection.getConnection();
-             PreparedStatement statement = connection.prepareStatement(UPDATE_ROOM_QUERY)) {
+            PreparedStatement statement = connection.prepareStatement(UPDATE_ROOM_QUERY)) {
             RoomTypeName roomTypeName = roomType.getValue();
             statement.setString(1, nameField.getText());
             statement.setString(2, roomTypeName.name());

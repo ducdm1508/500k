@@ -6,7 +6,7 @@
             xmlns:fx="http://javafx.com/fxml"
             fx:controller="com.cyber.server.controller.RoomController"
             style="-fx-padding: 20px; -fx-background-color: #f4f4f4;">
-    
+
     <center>
         <ScrollPane fitToWidth="true" fitToHeight="true" style="-fx-background: white; -fx-border-color: #ccc; -fx-padding: 10;">
             <FlowPane fx:id="roomGrid" hgap="15" vgap="15" prefWrapLength="500"

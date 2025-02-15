@@ -81,10 +81,10 @@ public class AddComputerController {
             pstmt.setString(1, computerName);
             ResultSet rs = pstmt.executeQuery();
             if (rs.next()) {
-                return rs.getInt(1) > 0; // Return true if count is greater than 0
+                return rs.getInt(1) > 0;
             }
         }
-        return false; // Return false if no duplicates found
+        return false;
     }
     private boolean isRoomFull(int roomId, int capacity) throws SQLException {
         String sql = "SELECT COUNT(*) FROM computers WHERE room_id = ?";
@@ -96,7 +96,7 @@ public class AddComputerController {
             ResultSet rs = pstmt.executeQuery();
             int computerCount = rs.next() ? rs.getInt(1) : 0;
 
-            return computerCount >= capacity; // So sánh với capacity đã có
+            return computerCount >= capacity;
         }
     }
 
@@ -116,10 +116,15 @@ public class AddComputerController {
             }
 
             Room selectedRoom = roomComboBox.getValue();
-            if (selectedRoom != null && isRoomFull(selectedRoom.getId(), selectedRoom.getCapacity())) {
-                showAlert("Error", "This room has reached its maximum capacity!", Alert.AlertType.ERROR);
-                return;
+            Room currentRoom = (computer != null) ? computer.getRoom() : null;
+
+            if (currentRoom == null || !selectedRoom.equals(currentRoom)) {
+                if (selectedRoom != null && isRoomFull(selectedRoom.getId(), selectedRoom.getCapacity())) {
+                    showAlert("Error", "This room has reached its maximum capacity!", Alert.AlertType.ERROR);
+                    return;
+                }
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
             showAlert("Error", "An error occurred while checking room capacity.", Alert.AlertType.ERROR);

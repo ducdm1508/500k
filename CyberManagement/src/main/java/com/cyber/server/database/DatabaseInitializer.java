@@ -128,6 +128,15 @@ public class DatabaseInitializer {
             )
         """;
 
+        String createPricingTableSQL = """
+            CREATE TABLE IF NOT EXISTS PRICING (
+                pricing_id INT AUTO_INCREMENT PRIMARY KEY,
+                service_name VARCHAR(255) NOT NULL,
+                price DECIMAL(10, 2) NOT NULL,
+                effective_date DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        """;
+
         try (Connection connection = DatabaseConnection.getConnection()) {
             Statement statement = connection.createStatement();
 
@@ -149,6 +158,7 @@ public class DatabaseInitializer {
             statement.executeUpdate(createOrdersTableSQL);
             statement.executeUpdate(createOrderDetailsTableSQL);
             statement.executeUpdate(createTopUpHistoryTableSQL);
+            statement.executeUpdate(createPricingTableSQL);
 
             System.out.println("Tables created successfully!");
         } catch (SQLException e) {

@@ -25,6 +25,7 @@ import javafx.stage.Stage;
 import de.jensd.fx.glyphs.fontawesome.FontAwesomeIconView;
 
 import java.sql.*;
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
@@ -345,10 +346,6 @@ public class ComputerController {
         System.out.println("Lock action triggered");
     }
 
-    public void handleSearch() {
-        handleFilter();
-    }
-
     private void handleMaintenance(Computer computer) {
         String sql = "UPDATE computers SET last_maintenance_date = ?, status = ? WHERE computer_id = ?";
         try (Connection conn = DatabaseConnection.getConnection();
@@ -369,6 +366,10 @@ public class ComputerController {
         }
     }
 
+    public void handleSearch() {
+        handleFilter();
+    }
+
     public void handleFilter() {
         String selectedRoom = roomFilter.getValue() != null ? roomFilter.getValue().getName() : "";
         String selectedSpec = specFilter.getValue() != null ? specFilter.getValue() : "";
@@ -382,20 +383,34 @@ public class ComputerController {
             return matchesRoom && matchesSpec && matchesStatus;
         });
 
-        // Now apply the search filter on the filtered list
         String searchTerm = searchField.getText().toLowerCase().trim();
         if (!searchTerm.isEmpty()) {
-            filteredList = filteredList.filtered(computer ->
-                    computer.getName().toLowerCase().contains(searchTerm) ||
-                            computer.getStatus().toString().toLowerCase().contains(searchTerm) ||
-                            computer.getSpecifications().toLowerCase().contains(searchTerm) ||
-                            computer.getIpAddress().toLowerCase().contains(searchTerm) ||
-                            computer.getRoom().getName().toLowerCase().contains(searchTerm)
-            );
+            // Split the search term by spaces and commas
+            String[] searchTerms = searchTerm.split("[ ,]+"); // This regex splits by space or comma
+
+            filteredList = filteredList.filtered(computer -> {
+                // Check if any of the search terms match the computer's properties
+                boolean matchesName = false;
+                boolean matchesStatus = false;
+                boolean matchesSpecifications = false;
+                boolean matchesIpAddress = false;
+                boolean matchesRoom = false;
+
+                for (String term : searchTerms) {
+                    matchesName = matchesName || computer.getName().toLowerCase().contains(term);
+                    matchesStatus = matchesStatus || computer.getStatus().toString().toLowerCase().contains(term);
+                    matchesSpecifications = matchesSpecifications || computer.getSpecifications().toLowerCase().contains(term);
+                    matchesIpAddress = matchesIpAddress || computer.getIpAddress().toLowerCase().contains(term);
+                    matchesRoom = matchesRoom || computer.getRoom().getName().toLowerCase().contains(term);
+                }
+
+                return matchesName || matchesStatus || matchesSpecifications || matchesIpAddress || matchesRoom;
+            });
         }
 
         tableView.setItems(filteredList);
     }
+
 
 
     @FXML
@@ -408,8 +423,8 @@ public class ComputerController {
     }
 
     private void clearFilters() {
-        roomFilter.setValue(null); // Clear the room filter
-        specFilter.setValue(null); // Clear the specifications filter
-        statusFilter.setValue(null); // Clear the status filter
+        roomFilter.setValue(null);
+        specFilter.setValue(null);
+        statusFilter.setValue(null);
     }
 }
