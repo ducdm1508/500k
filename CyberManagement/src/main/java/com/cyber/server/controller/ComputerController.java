@@ -29,8 +29,10 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public class ComputerController {
 
@@ -371,45 +373,38 @@ public class ComputerController {
     }
 
     public void handleFilter() {
-        String selectedRoom = roomFilter.getValue() != null ? roomFilter.getValue().getName() : "";
-        String selectedSpec = specFilter.getValue() != null ? specFilter.getValue() : "";
-        String selectedStatus = statusFilter.getValue() != null ? statusFilter.getValue().name() : "";
+        String selectedRoom = roomFilter.getValue() != null ? roomFilter.getValue().getName().toLowerCase().trim() : "";
+        String selectedSpec = specFilter.getValue() != null ? specFilter.getValue().toLowerCase().trim() : "";
+        String selectedStatus = statusFilter.getValue() != null ? statusFilter.getValue().name().toLowerCase().trim() : "";
 
         ObservableList<Computer> filteredList = computerList.filtered(computer -> {
-            boolean matchesRoom = selectedRoom.isEmpty() || computer.getRoom().getName().equals(selectedRoom);
-            boolean matchesSpec = selectedSpec.isEmpty() || computer.getSpecifications().contains(selectedSpec);
-            boolean matchesStatus = selectedStatus.isEmpty() || computer.getStatus().name().equals(selectedStatus);
+            boolean matchesRoom = selectedRoom.isEmpty() ||
+                    computer.getRoom().getName().toLowerCase().contains(selectedRoom);
+            boolean matchesSpec = selectedSpec.isEmpty() ||
+                    computer.getSpecifications().toLowerCase().contains(selectedSpec);
+            boolean matchesStatus = selectedStatus.isEmpty() ||
+                    computer.getStatus().name().toLowerCase().contains(selectedStatus);
 
             return matchesRoom && matchesSpec && matchesStatus;
         });
 
         String searchTerm = searchField.getText().toLowerCase().trim();
         if (!searchTerm.isEmpty()) {
-            // Split the search term by spaces and commas
-            String[] searchTerms = searchTerm.split("[ ,]+"); // This regex splits by space or comma
-
             filteredList = filteredList.filtered(computer -> {
-                // Check if any of the search terms match the computer's properties
-                boolean matchesName = false;
-                boolean matchesStatus = false;
-                boolean matchesSpecifications = false;
-                boolean matchesIpAddress = false;
-                boolean matchesRoom = false;
-
-                for (String term : searchTerms) {
-                    matchesName = matchesName || computer.getName().toLowerCase().contains(term);
-                    matchesStatus = matchesStatus || computer.getStatus().toString().toLowerCase().contains(term);
-                    matchesSpecifications = matchesSpecifications || computer.getSpecifications().toLowerCase().contains(term);
-                    matchesIpAddress = matchesIpAddress || computer.getIpAddress().toLowerCase().contains(term);
-                    matchesRoom = matchesRoom || computer.getRoom().getName().toLowerCase().contains(term);
-                }
-
-                return matchesName || matchesStatus || matchesSpecifications || matchesIpAddress || matchesRoom;
+                String combinedAttributes = (computer.getName() + " "
+                        + computer.getStatus().toString() + " "
+                        + computer.getSpecifications() + " "
+                        + computer.getIpAddress() + " "
+                        + computer.getRoom().getName()).toLowerCase();
+                return combinedAttributes.contains(searchTerm);
             });
         }
 
+        // Cập nhật TableView
         tableView.setItems(filteredList);
     }
+
+
 
 
 
