@@ -61,13 +61,11 @@ public class DatabaseInitializer {
         String createSessionsTableSQL = """
             CREATE TABLE IF NOT EXISTS SESSIONS (
                 session_id INT AUTO_INCREMENT PRIMARY KEY,
-                user_id INT,
                 computer_id INT,
                 start_time DATETIME NOT NULL,
                 end_time DATETIME,
                 total_time DECIMAL(10, 2),
                 session_cost DECIMAL(10, 2),
-                FOREIGN KEY (user_id) REFERENCES USERS(user_id),
                 FOREIGN KEY (computer_id) REFERENCES COMPUTERS(computer_id)
             )
         """;

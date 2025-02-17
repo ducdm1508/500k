@@ -83,7 +83,6 @@ public class ComputerController {
         loadComputersFromDatabase();
         loadRoomsAndStatuses();
         searchField.textProperty().addListener((observable, oldValue, newValue) -> handleSearch());
-
     }
 
     private void configureTable() {
@@ -422,4 +421,6 @@ public class ComputerController {
         specFilter.setValue(null);
         statusFilter.setValue(null);
     }
+
+
 }

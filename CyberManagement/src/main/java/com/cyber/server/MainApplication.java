@@ -14,7 +14,7 @@ import java.util.Objects;
 public class MainApplication extends Application {
     @Override
     public void start(Stage stage) throws IOException {
-        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/cyber/server/view/MainLayout.fxml"));
+        FXMLLoader fxmlLoader = new FXMLLoader(getClass().getResource("/com/cyber/server/view/Session.fxml"));
         Rectangle2D primaryScreenBounds = Screen.getPrimary().getVisualBounds();
         Scene scene = new Scene(fxmlLoader.load(), primaryScreenBounds.getWidth(), primaryScreenBounds.getHeight());
         Image logo = new Image(Objects.requireNonNull(getClass().getResource("/com/cyber/server/assets/logo.jpg")).toExternalForm());

@@ -5,7 +5,6 @@ import java.time.LocalDateTime;
 
 public class Session {
     private int id;
-    private User user;
     private Computer computer;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
@@ -15,8 +14,7 @@ public class Session {
     public Session() {;
     }
 
-    public Session(User user, Computer computer, LocalDateTime startTime, LocalDateTime endTime, double totalTime, double sessionCost) {
-        this.user = user;
+    public Session(Computer computer, LocalDateTime startTime, LocalDateTime endTime, double totalTime, double sessionCost) {
         this.computer = computer;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -30,14 +28,6 @@ public class Session {
 
     public void setId(int id) {
         this.id = id;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
-        this.user = user;
     }
 
     public Computer getComputer() {

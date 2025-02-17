@@ -41,11 +41,11 @@ public class RoomController {
     private ObservableList<Room> roomList = FXCollections.observableArrayList();
     private Room selectedRoom;
 
-    private static final String SELECT_ROOMS_QUERY = "SELECT room_id, room_name, capacity, room_type_id FROM ROOMS"; // Include room_id
+    private static final String SELECT_ROOMS_QUERY = "SELECT room_id, room_name, capacity, room_type_id FROM ROOMS";
     private static final String SELECT_ROOM_TYPE_QUERY = "SELECT type_name FROM ROOM_TYPES WHERE room_type_id = ?";
     private static final String INSERT_ROOM_QUERY = "INSERT INTO ROOMS (room_name, room_type_id, capacity) VALUES (?, (SELECT room_type_id FROM ROOM_TYPES WHERE type_name = ?), ?)";
     private static final String UPDATE_ROOM_QUERY = "UPDATE ROOMS SET room_name = ?, room_type_id = (SELECT room_type_id FROM ROOM_TYPES WHERE type_name = ?), capacity = ? WHERE room_id = ?";
-    private static final String DELETE_ROOM_QUERY = "DELETE FROM ROOMS WHERE room_id = ?"; // Use room_id for deletion
+    private static final String DELETE_ROOM_QUERY = "DELETE FROM ROOMS WHERE room_id = ?";
 
     @FXML
     public void initialize() {
@@ -59,14 +59,14 @@ public class RoomController {
              PreparedStatement statement = connection.prepareStatement(SELECT_ROOMS_QUERY);
              ResultSet resultSet = statement.executeQuery()) {
             while (resultSet.next()) {
-                int roomId = resultSet.getInt("room_id"); // Fetch the room ID
-                String roomName = resultSet.getString("room_name"); // Fetch the room name
-                int capacity = resultSet.getInt("capacity"); // Fetch the room capacity
-                int roomTypeId = resultSet.getInt("room_type_id"); // Fetch the room type ID
+                int roomId = resultSet.getInt("room_id");
+                String roomName = resultSet.getString("room_name");
+                int capacity = resultSet.getInt("capacity");
+                int roomTypeId = resultSet.getInt("room_type_id");
 
                 RoomType roomTypeObj = getRoomTypeById(roomTypeId); // Rename variable to avoid shadowing
 
-                if (roomTypeObj != null) { // Check if roomTypeObj is not null
+                if (roomTypeObj != null) {
                     Room room = new Room();
                     room.setId(roomId);
                     room.setName(roomName);
@@ -97,7 +97,7 @@ public class RoomController {
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        return 0; // Trả về 0 nếu có lỗi hoặc không có máy
+        return 0;
     }
 
     private RoomType getRoomTypeById(int roomTypeId) {
@@ -127,7 +127,6 @@ public class RoomController {
         StackPane box = new StackPane();
         box.setPrefSize(180, 180);
 
-        // Create a rectangle with rounded corners and drop shadow effect
         Rectangle rect = new Rectangle(180, 180);
         rect.setArcWidth(20);
         rect.setArcHeight(20);
@@ -154,37 +153,35 @@ public class RoomController {
         machineLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: gray;");
 
         Color defaultColor = Color.LIGHTBLUE;
-        Color fullRoomColor = Color.DARKSLATEBLUE; // Màu đậm hơn khi phòng đầy
+        Color fullRoomColor = Color.DARKSLATEBLUE;
 
-// Màu sắc khi hover
         Color hoverColor = Color.CORNFLOWERBLUE;
 
-// Nếu số lượng máy >= capacity thì thay đổi màu nền của ô và tên phòng
+
         if (machineCount >= room.getCapacity()) {
-            rect.setFill(fullRoomColor);  // Màu nền đậm hơn
+            rect.setFill(fullRoomColor);
             nameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold; -fx-text-fill: white;");
+            typeLabel.setStyle("-fx-text-fill: white;");
+            capacityLabel.setStyle("-fx-text-fill: white;");
+            machineLabel.setStyle("-fx-text-fill: white;");
         } else {
-            rect.setFill(defaultColor);  // Màu nền bình thường
+            rect.setFill(defaultColor);
             nameLabel.setStyle("-fx-font-size: 16px; -fx-font-weight: bold;");
         }
 
-// Hover effect
         box.setOnMouseEntered(e -> {
             rect.setFill(hoverColor);  // Màu khi hover
         });
         box.setOnMouseExited(e -> {
-            // Quay lại màu gốc khi không hover nữa, và vẫn giữ màu nếu phòng đầy
+
             if (machineCount >= room.getCapacity()) {
-                rect.setFill(fullRoomColor);  // Quay lại màu đậm khi đầy máy
+                rect.setFill(fullRoomColor);
             } else {
-                rect.setFill(defaultColor);  // Quay lại màu bình thường
+                rect.setFill(defaultColor);
             }
         });
         vbox.getChildren().addAll(nameLabel, capacityLabel, typeLabel, machineLabel);
 
-        // Hover effect
-
-        // Click event to select room
         box.setOnMouseClicked(event -> {
             selectedRoom = room;
             nameField.setText(room.getName());
@@ -194,7 +191,6 @@ public class RoomController {
 
         box.getChildren().addAll(rect, vbox);
 
-        // Ensure boxes have margin in FlowPane
         FlowPane.setMargin(box, new Insets(10));
 
         return box;
@@ -202,7 +198,7 @@ public class RoomController {
 
     @FXML
     private void addRoom() {
-        // Check if fields are not empty
+
         if (nameField.getText().isEmpty() || capacityField.getText().isEmpty() || roomType.getValue() == null) {
             showError("All fields must be filled.");
             return;
