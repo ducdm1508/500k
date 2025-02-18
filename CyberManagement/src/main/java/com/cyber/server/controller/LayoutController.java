@@ -44,7 +44,7 @@ public class LayoutController {
         setCenterContent("/com/cyber/server/view/Report.fxml", reportsButton);
     }
     @FXML
-    private void handleRoomClick() {setCenterContent("/com/cyber/server/view/Room.fxml", roomsButton);}
+    private void handleRoomClick() {setCenterContent("/com/cyber/server/view/Session.fxml", roomsButton);}
     @FXML
     private void handleFoodClick() {
         setCenterContent("/com/cyber/server/view/Food.fxml", foodButton);
@@ -59,7 +59,6 @@ public class LayoutController {
             Node content = FXMLLoader.load(Objects.requireNonNull(getClass().getResource(fxmlFile)));
             mainLayout.setCenter(content);
             updateButtonStyles(activeButton);
-
         } catch (IOException e) {
             e.printStackTrace();
         }

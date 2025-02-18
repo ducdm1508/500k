@@ -99,6 +99,10 @@ public class AddComputerController {
             return computerCount >= capacity;
         }
     }
+    private boolean isValidIpAddress(String ipAddress) {
+        String ipPattern = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$";
+        return ipAddress.matches(ipPattern);
+    }
 
     @FXML
     private void handleSaveButton() {
@@ -106,6 +110,12 @@ public class AddComputerController {
             showAlert("Error", "All fields are required!", Alert.AlertType.ERROR);
             return;
         }
+
+        if (!isValidIpAddress(ipAddressInput.getText())) {
+            showAlert("Error", "Invalid IP address format!", Alert.AlertType.ERROR);
+            return;
+        }
+
 
         try {
             if (computer == null || !nameInput.getText().equals(computer.getName())) {

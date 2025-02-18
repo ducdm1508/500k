@@ -209,6 +209,7 @@ public class ComputerController {
                 computerList.add(computer);
             }
             tableView.setItems(computerList);
+            tableView.refresh();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -399,13 +400,9 @@ public class ComputerController {
             });
         }
 
-        // Cập nhật TableView
         tableView.setItems(filteredList);
+        tableView.refresh();
     }
-
-
-
-
 
     @FXML
     public void toggleFilterPanel() {
@@ -421,6 +418,5 @@ public class ComputerController {
         specFilter.setValue(null);
         statusFilter.setValue(null);
     }
-
 
 }

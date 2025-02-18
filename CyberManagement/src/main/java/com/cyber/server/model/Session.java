@@ -1,6 +1,5 @@
 package com.cyber.server.model;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class Session {
@@ -11,7 +10,7 @@ public class Session {
     private double totalTime;
     private double sessionCost;
 
-    public Session() {;
+    public Session() {
     }
 
     public Session(Computer computer, LocalDateTime startTime, LocalDateTime endTime, double totalTime, double sessionCost) {

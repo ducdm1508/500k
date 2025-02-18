@@ -3,7 +3,6 @@ package com.cyber.server.controller;
 import com.cyber.server.database.DatabaseConnection;
 import com.cyber.server.model.Computer;
 import com.cyber.server.model.Session;
-import com.cyber.server.model.Status;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.beans.property.SimpleStringProperty;
@@ -16,7 +15,6 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.util.Duration;
 
 import java.sql.*;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public class SessionController {
@@ -38,33 +36,30 @@ public class SessionController {
     @FXML
     private TableColumn<Session, String> sessionCostColumn;
 
-    private ObservableList<Session> sessionList = FXCollections.observableArrayList();
-    private Session session = new Session();
-
-    @FXML
+    private final ObservableList<Session> sessionList = FXCollections.observableArrayList();
     private boolean isDataChanged = false;
 
     @FXML
     public void initialize() {
         configureTable();
         loadSessionFromData();
-        Timeline timeline = new Timeline(new KeyFrame(Duration.seconds(1), event -> {
-            // Chỉ gọi khi có máy tính mới online
-            boolean newSessionAdded = insertSessionIfOnline();
 
-            boolean sessionUpdated = updateSessionIfOffline();
-
-            if (newSessionAdded || sessionUpdated || isDataChanged) {
-                loadSessionFromData();
-                isDataChanged = false;
-            }
+        Timeline timeline = new Timeline(new KeyFrame(Duration.millis(500), event -> {
+            checkForUpdates();
         }));
         timeline.setCycleCount(Timeline.INDEFINITE);
         timeline.play();
     }
+    private void checkForUpdates() {
+        boolean newSessionAdded = insertSessionIfOnline();
+        boolean sessionUpdated = updateSessionIfOffline();
 
-
-    private void configureTable() {
+        if (newSessionAdded || sessionUpdated || isDataChanged) {
+            loadSessionFromData();
+            isDataChanged = false;
+        }
+    }
+    public void configureTable() {
         computerNameColumn.setCellValueFactory(cellData ->
                 new SimpleStringProperty(cellData.getValue().getComputer().getName()));
 
@@ -84,15 +79,15 @@ public class SessionController {
         sessionTable.setItems(sessionList);
     }
 
-    private void loadSessionFromData() {
-        sessionList.clear();
+    public void loadSessionFromData() {
+        sessionList.clear(); // Xóa danh sách hiện tại
         String sql = "SELECT s.*, c.computer_name " +
                 "FROM sessions s " +
                 "JOIN computers c ON s.computer_id = c.computer_id";
 
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
-            ResultSet resultSet = preparedStatement.executeQuery();
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql);
+             ResultSet resultSet = preparedStatement.executeQuery()) {
 
             while (resultSet.next()) {
                 Session session = new Session();
@@ -102,10 +97,9 @@ public class SessionController {
                 computer.setName(resultSet.getString("computer_name"));
 
                 session.setId(resultSet.getInt("session_id"));
-                session.setComputer(computer); // Liên kết Computer với Session
+                session.setComputer(computer);
                 session.setStartTime(resultSet.getTimestamp("start_time").toLocalDateTime());
 
-                // Sửa lỗi ở đây
                 Timestamp endTime = resultSet.getTimestamp("end_time");
                 session.setEndTime(endTime != null ? endTime.toLocalDateTime() : null);
 
@@ -113,14 +107,17 @@ public class SessionController {
                 session.setSessionCost(resultSet.getDouble("session_cost"));
 
                 sessionList.add(session);
+                System.out.println("Đã thêm phiên: " + session.getId() + ", Máy tính: " + computer.getName());
             }
+            System.out.println("Dữ liệu đã được tải thành công. Số phiên: " + sessionList.size());
+            sessionTable.refresh();
+            sessionTable.setItems(sessionList);
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
 
-
-    private boolean insertSessionIfOnline() {
+    public boolean insertSessionIfOnline() {
         String sql = "INSERT INTO sessions (computer_id, start_time, end_time, total_time, session_cost) " +
                 "SELECT c.computer_id, NOW(), NULL, NULL, NULL " +
                 "FROM computers c " +
@@ -130,13 +127,15 @@ public class SessionController {
                 "    WHERE s.computer_id = c.computer_id AND s.end_time IS NULL" +
                 ")";
 
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
             int rowsInserted = preparedStatement.executeUpdate();
 
             if (rowsInserted > 0) {
                 System.out.println("Đã thêm phiên mới cho các máy tính đang online.");
-                isDataChanged = true;
+
+                isDataChanged = true; // Đánh dấu dữ liệu đã thay đổi
                 return true;
             }
         } catch (SQLException e) {
@@ -145,10 +144,9 @@ public class SessionController {
         return false;
     }
 
-
     private int rate_per_hour = 10000;
 
-    private boolean updateSessionIfOffline() {
+    public boolean updateSessionIfOffline() {
         String sql = "UPDATE sessions s " +
                 "JOIN computers c ON s.computer_id = c.computer_id " +
                 "SET s.end_time = NOW(), " +
@@ -156,14 +154,15 @@ public class SessionController {
                 "    s.session_cost = (TIMESTAMPDIFF(SECOND, s.start_time, NOW()) / 3600) * ? " +
                 "WHERE c.status = 'offline' AND s.end_time IS NULL";
 
-        try (Connection connection = DatabaseConnection.getConnection()) {
-            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        try (Connection connection = DatabaseConnection.getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(sql)) {
+
             preparedStatement.setInt(1, rate_per_hour);
             int rowsUpdated = preparedStatement.executeUpdate();
 
             if (rowsUpdated > 0) {
                 System.out.println("Đã cập nhật phiên cho các máy tính chuyển sang offline.");
-                isDataChanged = true;
+                isDataChanged = true; // Đánh dấu dữ liệu đã thay đổi
                 return true;
             }
         } catch (SQLException e) {
@@ -171,7 +170,4 @@ public class SessionController {
         }
         return false;
     }
-
-
-
 }
